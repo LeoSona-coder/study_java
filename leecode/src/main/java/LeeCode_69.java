@@ -12,4 +12,3 @@ public class LeeCode_69 {
         System.out.println(i);
     }
 }
- n
