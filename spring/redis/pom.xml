@@ -20,7 +20,12 @@
 <!--        一个功能强大的redis库-->
         <dependency>
             <groupId>org.redisson</groupId>
-            <artifactId>redisson-spring-boot-starter</artifactId>
+            <artifactId>redisson</artifactId>
+        </dependency>
+        <!--        一个功能强大的redis库-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 <!--        redis 连接池库-->
         <dependency>
@@ -48,6 +53,13 @@
             <groupId>com.github.yulichang</groupId>
             <artifactId>mybatis-plus-join-boot-starter</artifactId> <!-- MyBatis 联表查询 -->
         </dependency>
+        <!-- 工具类相关 -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+
+
     </dependencies>
     <build>
         <plugins>
@@ -60,6 +72,24 @@
                 </configuration>
             </plugin>
         </plugins>
+
+        <!-- 如果不添加此节点src/main/java目录下的所有配置文件都会被漏掉。 -->
+        <resources>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.xml</include>
+                    <include>**/*.properties</include>
+                    <include>**/*.ini</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 
 

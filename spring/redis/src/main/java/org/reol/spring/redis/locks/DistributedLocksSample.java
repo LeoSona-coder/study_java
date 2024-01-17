@@ -58,7 +58,11 @@ public class DistributedLocksSample {
     }
 
     /**
-     *
+     * @problem:
+     * 1.获取锁一次就返回false 无法重试
+     * 2.无法重入，同一个线程无法多次获取同一把锁
+     * 3.超时释放虽然可以避免死锁，但是如果业务耗时较长也会导致锁释放，存在安全隐患
+     * 4.主从一致性问题：主从存在延迟，主宕机，如果从并未同步主的锁数据，可能出现锁失效
      * @param key 我们使用key来当锁，因为key是唯一的,一般key包含某个要锁住的资源的唯一编号 如lock:product_number
      * @param requestId key对应的value，我们传的是requestId，很多童鞋可能不明白，有key作为锁不就够了吗，为什么还要用到value？原因就是我们在上面讲到可靠性时，分布式锁要满足第四个条件解铃还须系铃人，通过给value赋值为requestId，我们就知道这把锁是哪个请求加的了，在解锁的时候就可以有依据。requestId可以使用线程id + UUID.randomUUID().toString()方法生成。
      * @param expireTime 代表key的过期时间，防止死锁
