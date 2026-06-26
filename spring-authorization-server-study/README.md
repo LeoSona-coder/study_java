@@ -99,7 +99,7 @@ spring-authorization-server-study/
 
 - [x] 00. 阅读计划
 - [x] 01. Overview
-- [ ] 02. Getting Help
+- [x] 02. Getting Help
 - [ ] 03. Getting Started
 - [ ] 04. Configuration Model
 - [ ] 05. Core Model / Components
