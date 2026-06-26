@@ -1,0 +1,2 @@
+# SVG images can be placed here when a diagram should be reused across pages.
+# Current committed chapters mainly use inline SVG so GitHub Pages can preview without extra asset loading.
