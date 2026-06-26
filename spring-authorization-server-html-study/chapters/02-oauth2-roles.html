@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>第 2 章：OAuth2 角色：这些人到底是谁？</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="chapter-header">
+    <div class="container">
+      <a class="back-link" href="../index.html">← 返回首页</a>
+      <p class="eyebrow">第 2 章</p>
+      <h1>OAuth2 角色：这些人到底是谁？</h1>
+      <p class="lead">
+        OAuth2 学不明白，通常不是因为代码难，而是因为一开始就把 user、client、resource server 混成了一团。
+      </p>
+    </div>
+  </header>
+
+  <main id="main" class="container book-layout">
+    <aside class="toc">
+      <strong>章节导航</strong>
+      <a href="./00-before-you-start.html">第 0 章：开始之前</a>
+      <a href="./01-big-picture.html">第 1 章：大图</a>
+      <a href="./02-oauth2-roles.html">第 2 章：OAuth2 角色</a>
+      <a href="./03-getting-started.html">第 3 章：Getting Started</a>
+    </aside>
+
+    <article class="content">
+      <nav class="chapter-nav top">
+        <a href="./01-big-picture.html">← 上一章：大图</a>
+        <a href="./03-getting-started.html">下一章：Getting Started →</a>
+      </nav>
+
+      <section class="problem-box">
+        <h2>本章解决什么问题？</h2>
+        <p>
+          你之前问过：<code>platform-admin</code>、<code>conference-portal</code> 注册成 public PKCE client，
+          <code>gateway</code>、<code>system</code>、<code>infra</code>、<code>conference</code>、<code>pay</code>
+          注册成 confidential service client，这是什么意思？
+        </p>
+        <p>
+          本章就把这些“人”对号入座。
+          先记住一个关键点：<strong>user 不是 client，client_id 不是 user_id。</strong>
+        </p>
+      </section>
+
+      <section class="official-note">
+        <strong>官方依据：</strong>
+        本章基于 Spring Authorization Server 1.5.8 Reference 的 Overview 与 Core Model / Components 页面。
+        Overview 的 Feature List 包含 Authorization Code、Client Credentials、Token Formats、Client Authentication Methods，并列出 <code>none</code> 作为 public clients 的客户端认证方式。
+        Core Model / Components 说明 <code>RegisteredClient</code> 是注册到授权服务器的 client 表示，client 在发起授权流程前必须注册，并拥有 client_id、可选 client_secret、redirect_uri、scope、grant type 等元数据。
+        本章把这些概念映射到 conference 项目，是项目落地解释，不是官方原文。
+      </section>
+
+      <section class="card">
+        <h2>先讲人话：OAuth2 不是“用户拿密码换 token”这么简单</h2>
+        <p>
+          在 OAuth2 里，系统关心的不只是“用户是谁”，还关心“哪个 client 在替用户请求资源”。
+        </p>
+        <p>
+          举个例子：张三登录了后台。
+          张三是用户，<code>platform-admin</code> 是 client。
+          授权服务器要同时判断：
+          张三是否登录成功？
+          <code>platform-admin</code> 是否是合法 client？
+          它申请的 redirect_uri、scope、grant type 是否允许？
+        </p>
+
+        <div class="remember-box">
+          <strong>先记住：</strong>
+          用户认证解决“人是谁”。
+          client 认证解决“应用是谁”。
+          OAuth2 授权流程会同时关心这两件事。
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>OAuth2 四个核心角色</h2>
+        <div class="role-map">
+          <div class="role-card">
+            <h3>Resource Owner</h3>
+            <p>资源拥有者。放到 conference 项目里，就是登录用户，比如平台管理员、会议主办方、参会用户。</p>
+          </div>
+
+          <div class="role-card">
+            <h3>Client</h3>
+            <p>代表用户或代表服务去申请 Token 的应用。比如 platform-admin、conference-portal，或者 conference、pay、infra 这些内部服务。</p>
+          </div>
+
+          <div class="role-card">
+            <h3>Authorization Server</h3>
+            <p>授权服务器。你的项目里就是 <code>conference-module-auth</code>，负责校验授权请求并签发 Token。</p>
+          </div>
+
+          <div class="role-card">
+            <h3>Resource Server</h3>
+            <p>资源服务器。Gateway 和业务服务都可能承担这个角色：它们接收请求，并基于 Token 或可信上下文做访问控制。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>映射到 conference 项目</h2>
+        <figure class="diagram">
+          <svg viewBox="0 0 980 460" role="img" aria-label="OAuth2 角色映射图">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L9,3 z"></path>
+              </marker>
+            </defs>
+
+            <rect x="50" y="60" width="190" height="90" rx="16" class="svg-box user"/>
+            <text x="145" y="98" text-anchor="middle" class="svg-title">Resource Owner</text>
+            <text x="145" y="128" text-anchor="middle" class="svg-text">登录用户</text>
+
+            <rect x="310" y="40" width="190" height="130" rx="16" class="svg-box client"/>
+            <text x="405" y="78" text-anchor="middle" class="svg-title">Public Clients</text>
+            <text x="405" y="108" text-anchor="middle" class="svg-text">platform-admin</text>
+            <text x="405" y="132" text-anchor="middle" class="svg-text">conference-portal</text>
+            <text x="405" y="156" text-anchor="middle" class="svg-text">PKCE / no secret</text>
+
+            <rect x="570" y="40" width="190" height="130" rx="16" class="svg-box service"/>
+            <text x="665" y="78" text-anchor="middle" class="svg-title">Confidential Clients</text>
+            <text x="665" y="108" text-anchor="middle" class="svg-text">gateway / system</text>
+            <text x="665" y="132" text-anchor="middle" class="svg-text">conference / pay / infra</text>
+            <text x="665" y="156" text-anchor="middle" class="svg-text">client_secret_basic</text>
+
+            <rect x="395" y="260" width="230" height="100" rx="18" class="svg-box auth"/>
+            <text x="510" y="302" text-anchor="middle" class="svg-title">Authorization Server</text>
+            <text x="510" y="332" text-anchor="middle" class="svg-text">conference-module-auth</text>
+
+            <rect x="740" y="260" width="190" height="100" rx="18" class="svg-box gateway"/>
+            <text x="835" y="302" text-anchor="middle" class="svg-title">Resource Server</text>
+            <text x="835" y="332" text-anchor="middle" class="svg-text">Gateway / 业务服务</text>
+
+            <line x1="240" y1="105" x2="310" y2="105" class="svg-line" marker-end="url(#arrow)"/>
+            <text x="275" y="88" text-anchor="middle" class="svg-text">使用</text>
+
+            <line x1="405" y1="170" x2="470" y2="260" class="svg-line" marker-end="url(#arrow)"/>
+            <text x="395" y="232" text-anchor="middle" class="svg-text">申请授权码 / Token</text>
+
+            <line x1="665" y1="170" x2="550" y2="260" class="svg-line" marker-end="url(#arrow)"/>
+            <text x="660" y="232" text-anchor="middle" class="svg-text">client_credentials</text>
+
+            <line x1="625" y1="310" x2="740" y2="310" class="svg-line" marker-end="url(#arrow)"/>
+            <text x="682" y="292" text-anchor="middle" class="svg-text">携带 access_token</text>
+          </svg>
+          <figcaption>
+            一个用户可以使用多个 client；一个 client 也可以服务很多用户。它们不是同一个维度。
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="card">
+        <h2>public client 和 confidential client</h2>
+        <p>
+          在授权服务器里，client 是要注册的。
+          它不是某个登录用户，而是一个要向授权服务器申请 Token 的应用。
+        </p>
+
+        <div class="compare-grid">
+          <div class="compare-card">
+            <h3>Public Client</h3>
+            <p class="tag">适合浏览器端 / SPA</p>
+            <ul>
+              <li>例如：<code>platform-admin</code>、<code>conference-portal</code></li>
+              <li>不能安全保存 <code>client_secret</code></li>
+              <li>使用 Authorization Code + PKCE</li>
+              <li>客户端认证方式通常是 <code>none</code></li>
+              <li>必须严格校验 <code>redirect_uri</code></li>
+            </ul>
+          </div>
+
+          <div class="compare-card">
+            <h3>Confidential Client</h3>
+            <p class="tag">适合后端服务</p>
+            <ul>
+              <li>例如：<code>gateway</code>、<code>system</code>、<code>conference</code>、<code>pay</code>、<code>infra</code></li>
+              <li>可以保存 <code>client_secret</code></li>
+              <li>服务间调用常用 <code>client_credentials</code></li>
+              <li>可以使用 <code>client_secret_basic</code></li>
+              <li>secret 应放配置中心或密钥系统，并避免明文泄露</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="demo-note">
+        <h2>Demo 不等于生产：client_id 不是 user_id</h2>
+        <p>
+          你可能在 demo 里看到 <code>client-a</code>、<code>messaging-client</code> 这种名字。
+          它们不是用户账号，而是注册到授权服务器的客户端。
+        </p>
+        <p>
+          生产中也不要用用户 ID 当 <code>client_id</code>。
+          <code>client_id</code> 表示应用身份，比如 <code>platform-admin</code> 或 <code>pay-service</code>；
+          <code>user_id</code> 表示登录用户，比如某个管理员或参会人。
+        </p>
+      </section>
+
+      <section class="project-note">
+        <h2>项目落地：conference 应该怎么注册 client？</h2>
+        <p>这是项目落地建议，不是官方原文。</p>
+        <div class="client-list">
+          <div class="client-item">
+            <strong>platform-admin</strong>
+            <span>public client，Authorization Code + PKCE，用于平台管理后台。</span>
+          </div>
+          <div class="client-item">
+            <strong>conference-portal</strong>
+            <span>public client，Authorization Code + PKCE，用于会议门户端。</span>
+          </div>
+          <div class="client-item">
+            <strong>gateway</strong>
+            <span>confidential client，可用于服务身份场景；同时 Gateway 也是外部请求的资源服务器入口。</span>
+          </div>
+          <div class="client-item">
+            <strong>conference / pay / infra / system</strong>
+            <span>confidential service clients，服务间调用时通过 client_credentials 获取服务 Token。</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="pitfall-box">
+        <h2>别在这里翻车</h2>
+        <ul>
+          <li><strong>把用户当 client：</strong>用户是 Resource Owner，client 是应用。两者不是一回事。</li>
+          <li><strong>把 client_secret 放进浏览器：</strong>浏览器端无法安全保存 secret，所以 public client 不应该依赖 secret。</li>
+          <li><strong>把所有服务共用一个 client：</strong>这样审计和权限收敛会很差。pay、infra、conference 最好有自己的 client 身份。</li>
+          <li><strong>混用用户 Token 和服务 Token：</strong>用户 Token 表示“某个用户访问系统”，服务 Token 表示“某个服务访问另一个服务”。</li>
+        </ul>
+      </section>
+
+      <section class="summary-box">
+        <h2>这一章记住这几句话</h2>
+        <p>
+          user 不是 client，client_id 不是 user_id。
+          platform-admin、conference-portal 是 public client，不能保存 secret，应该走 Authorization Code + PKCE。
+          gateway、system、conference、pay、infra 是 confidential client，可以使用 client_credentials 做服务间调用。
+          conference-module-auth 是 Authorization Server，Gateway 和业务服务是 Resource Server。
+        </p>
+      </section>
+
+      <nav class="chapter-nav bottom">
+        <a href="./01-big-picture.html">← 上一章：大图</a>
+        <a href="./03-getting-started.html">下一章：Getting Started →</a>
+      </nav>
+    </article>
+  </main>
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>
