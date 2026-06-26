@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>第 1 章：大图：Authorization Server 在系统里站哪？</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="chapter-header">
+    <div class="container">
+      <a class="back-link" href="../index.html">← 返回首页</a>
+      <p class="eyebrow">第 1 章</p>
+      <h1>大图：Authorization Server 在系统里站哪？</h1>
+      <p class="lead">
+        先别问某个 Bean 怎么写。先问一句：
+        用户请求进来以后，谁签发 Token？谁验证 Token？谁负责权限数据？
+      </p>
+    </div>
+  </header>
+
+  <main id="main" class="container book-layout">
+    <aside class="toc">
+      <strong>章节导航</strong>
+      <a href="./00-before-you-start.html">第 0 章：开始之前</a>
+      <a href="./01-big-picture.html">第 1 章：大图</a>
+      <a href="./02-oauth2-roles.html">第 2 章：OAuth2 角色</a>
+      <a href="./03-getting-started.html">第 3 章：Getting Started</a>
+    </aside>
+
+    <article class="content">
+      <nav class="chapter-nav top">
+        <a href="./00-before-you-start.html">← 上一章：开始之前</a>
+        <a href="./02-oauth2-roles.html">下一章：OAuth2 角色 →</a>
+      </nav>
+
+      <section class="problem-box">
+        <h2>本章解决什么问题？</h2>
+        <p>
+          你准备新增 <code>conference-module-auth</code>，但原来的 system 模块又已经有用户、角色、菜单、按钮权限。
+          那么 auth 和 system 会不会重复？Gateway 到底该干什么？业务服务还需不需要自己验 JWT？
+        </p>
+        <p>
+          本章先把大图画清楚。只要大图清楚，后面的配置就不会乱。
+        </p>
+      </section>
+
+      <section class="official-note">
+        <strong>官方依据：</strong>
+        本章基于 Spring Authorization Server 1.5.8 Reference 的 Overview 页面。
+        Overview 说明 Spring Authorization Server 提供 OAuth2 / OpenID Connect 相关规范实现，并构建在 Spring Security 之上。
+        本章对 conference-module-auth、Gateway、system、业务服务的职责划分，属于项目落地建议，不是官方原文。
+      </section>
+
+      <section class="card">
+        <h2>先讲人话：auth 是发证机关，不是业务服务</h2>
+        <p>
+          你可以把 <code>conference-module-auth</code> 想成“发证机关”：
+          它不负责会议报名，不负责支付，不负责文件存储，也不负责渲染菜单树。
+        </p>
+        <p>
+          它负责回答一个更底层的问题：
+          这个 client 是否被允许申请 Token？
+          这个用户是否已经完成认证？
+          这次授权请求是否合法？
+          如果合法，应该签发什么 Token？
+        </p>
+
+        <div class="remember-box">
+          <strong>先记住：</strong>
+          Authorization Server 是发 Token 的地方。
+          Resource Server 是验 Token 的地方。
+          system 是权限档案室。
+          Gateway 是入口门卫。
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>conference OAuth2 总体架构图</h2>
+        <figure class="diagram">
+          <svg viewBox="0 0 1040 620" role="img" aria-label="conference OAuth2 总体架构图">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L9,3 z"></path>
+              </marker>
+            </defs>
+
+            <rect x="45" y="65" width="210" height="100" rx="18" class="svg-box client"/>
+            <text x="150" y="104" text-anchor="middle" class="svg-title">浏览器端</text>
+            <text x="150" y="132" text-anchor="middle" class="svg-text">platform-admin</text>
+            <text x="150" y="154" text-anchor="middle" class="svg-text">conference-portal</text>
+
+            <rect x="405" y="50" width="250" height="130" rx="20" class="svg-box auth"/>
+            <text x="530" y="92" text-anchor="middle" class="svg-title">conference-module-auth</text>
+            <text x="530" y="122" text-anchor="middle" class="svg-text">Authorization Server</text>
+            <text x="530" y="146" text-anchor="middle" class="svg-text">OAuth2 / OIDC / Token / JWK</text>
+
+            <rect x="780" y="65" width="220" height="100" rx="18" class="svg-box system"/>
+            <text x="890" y="104" text-anchor="middle" class="svg-title">conference-module-system</text>
+            <text x="890" y="132" text-anchor="middle" class="svg-text">用户 / 角色 / 菜单 / 按钮</text>
+            <text x="890" y="154" text-anchor="middle" class="svg-text">权限档案室</text>
+
+            <rect x="405" y="270" width="250" height="120" rx="20" class="svg-box gateway"/>
+            <text x="530" y="312" text-anchor="middle" class="svg-title">Gateway</text>
+            <text x="530" y="342" text-anchor="middle" class="svg-text">Resource Server</text>
+            <text x="530" y="366" text-anchor="middle" class="svg-text">验 JWT，注入可信用户上下文</text>
+
+            <rect x="60" y="490" width="170" height="80" rx="16" class="svg-box service"/>
+            <text x="145" y="535" text-anchor="middle" class="svg-title">conference</text>
+
+            <rect x="310" y="490" width="170" height="80" rx="16" class="svg-box service"/>
+            <text x="395" y="535" text-anchor="middle" class="svg-title">pay</text>
+
+            <rect x="560" y="490" width="170" height="80" rx="16" class="svg-box service"/>
+            <text x="645" y="535" text-anchor="middle" class="svg-title">infra</text>
+
+            <rect x="810" y="490" width="170" height="80" rx="16" class="svg-box service"/>
+            <text x="895" y="535" text-anchor="middle" class="svg-title">其他业务服务</text>
+
+            <line x1="255" y1="115" x2="405" y2="115" class="svg-line" marker-end="url(#arrow)"/>
+            <text x="330" y="96" text-anchor="middle" class="svg-text">登录 / 授权</text>
+            <text x="330" y="142" text-anchor="middle" class="svg-text">Authorization Code + PKCE</text>
+
+            <line x1="655" y1="115" x2="780" y2="115" class="svg-line dashed" marker-end="url(#arrow)"/>
+            <text x="718" y="96" text-anchor="middle" class="svg-text">查询用户权限档案</text>
+
+            <line x1="150" y1="165" x2="430" y2="270" class="svg-line" marker-end="url(#arrow)"/>
+            <text x="250" y="238" text-anchor="middle" class="svg-text">携带 access_token 请求 API</text>
+
+            <line x1="530" y1="180" x2="530" y2="270" class="svg-line dashed" marker-end="url(#arrow)"/>
+            <text x="595" y="232" class="svg-text">JWK / issuer / metadata</text>
+
+            <line x1="530" y1="390" x2="145" y2="490" class="svg-line" marker-end="url(#arrow)"/>
+            <line x1="530" y1="390" x2="395" y2="490" class="svg-line" marker-end="url(#arrow)"/>
+            <line x1="530" y1="390" x2="645" y2="490" class="svg-line" marker-end="url(#arrow)"/>
+            <line x1="530" y1="390" x2="895" y2="490" class="svg-line" marker-end="url(#arrow)"/>
+
+            <text x="530" y="448" text-anchor="middle" class="svg-caption">
+              Gateway 向下游传递可信 user context；服务间调用另走 service token。
+            </text>
+          </svg>
+          <figcaption>
+            这张图不是官方原图，而是 conference 项目落地架构图。
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="card">
+        <h2>四个边界一定要分开</h2>
+        <div class="concept-grid">
+          <div class="concept-card">
+            <h3>1. auth：Token 签发中心</h3>
+            <p><code>conference-module-auth</code> 负责 OAuth2 / OIDC 协议端点、client 校验、授权码、Token、JWK、issuer 等。</p>
+          </div>
+
+          <div class="concept-card">
+            <h3>2. system：权限档案室</h3>
+            <p><code>conference-module-system</code> 继续管理用户、角色、菜单、按钮权限。它提供权限数据，但不应该成为 OAuth2 Token 签发器。</p>
+          </div>
+
+          <div class="concept-card">
+            <h3>3. Gateway：入口门卫</h3>
+            <p>Gateway 面向外部请求，校验用户 JWT。验证通过后，再向下游服务传递可信的 <code>user_id</code>、<code>tenant_id</code>、<code>authorities</code> 等上下文。</p>
+          </div>
+
+          <div class="concept-card">
+            <h3>4. 业务服务：只做业务</h3>
+            <p>conference、pay、infra 主要处理业务逻辑。它们可以做方法级权限校验，但不要各自实现一套登录和 Token 签发。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="project-note">
+        <h2>项目落地：Gateway 到底验什么？</h2>
+        <p>这是项目落地建议，不是官方原文。</p>
+        <p>
+          浏览器请求进来时，Gateway 应该把自己当成 Resource Server：
+          它校验 access_token 的签名、issuer、过期时间、必要 claims。
+          校验通过后，Gateway 才能向下游传递可信用户上下文。
+        </p>
+        <p>
+          这样下游服务不用重复解析外部 token，也不用信任前端直接传来的
+          <code>X-User-Id</code>。这些 header 只能由 Gateway 注入，外部传入的同名 header 应该被清理。
+        </p>
+      </section>
+
+      <section class="pitfall-box">
+        <h2>别在这里翻车</h2>
+        <ul>
+          <li><strong>把 system 当授权服务器：</strong>短期省事，长期会把用户权限、登录流程、OAuth2 协议端点混在一起。</li>
+          <li><strong>Gateway 只转发不验签：</strong>那它就不是门卫，只是一个路由器。</li>
+          <li><strong>业务服务相信外部 header：</strong>如果没有清理外部伪造的 <code>X-User-Id</code>，权限边界会被绕过。</li>
+          <li><strong>用户 Token 和服务 Token 混用：</strong>用户访问和服务间调用是两条链路，第 8 章会专门拆。</li>
+        </ul>
+      </section>
+
+      <section class="summary-box">
+        <h2>这一章记住这几句话</h2>
+        <p>
+          Authorization Server 是发 Token 的地方。
+          Resource Server 是验 Token 的地方。
+          system 是权限档案室，不是 Token 签发器。
+          Gateway 是入口门卫，要校验 JWT，并向下游传递可信上下文。
+        </p>
+      </section>
+
+      <nav class="chapter-nav bottom">
+        <a href="./00-before-you-start.html">← 上一章：开始之前</a>
+        <a href="./02-oauth2-roles.html">下一章：OAuth2 角色 →</a>
+      </nav>
+    </article>
+  </main>
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>
