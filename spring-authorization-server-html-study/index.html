@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spring Authorization Server 1.5.8 中文学习小书</title>
+  <link rel="stylesheet" href="./assets/css/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="book-header">
+    <div class="container">
+      <p class="eyebrow">Spring Authorization Server 1.5.8 · 中文教学 + 项目落地</p>
+      <h1>把 OAuth2 / OIDC 鉴权中心真正落到 conference 微服务项目里</h1>
+      <p class="lead">
+        这不是官方文档逐字翻译，也不是一堆配置复制粘贴。
+        这是一份面向 Java 后端的学习小书：先看懂授权服务器在系统里站哪，
+        再逐步拆配置、Bean、端点、Token、Gateway、Feign 和生产化风险。
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" href="./chapters/00-before-you-start.html">开始阅读</a>
+        <a class="button secondary" href="#route">查看阅读路线</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="container book-layout">
+    <aside class="toc">
+      <strong>章节导航</strong>
+      <a href="./chapters/00-before-you-start.html">第 0 章：开始之前</a>
+      <a href="./chapters/01-big-picture.html">第 1 章：大图</a>
+      <a href="./chapters/02-oauth2-roles.html">第 2 章：OAuth2 角色</a>
+      <a href="./chapters/03-getting-started.html">第 3 章：Getting Started</a>
+      <a href="./chapters/04-security-filter-chain.html">第 4 章：SecurityFilterChain</a>
+      <a href="./chapters/05-registered-client.html">第 5 章：RegisteredClient</a>
+      <a href="./chapters/06-token-jwt-jwk.html">第 6 章：Token、JWT、JWK</a>
+      <a href="./chapters/07-authorization-code-pkce.html">第 7 章：Authorization Code + PKCE</a>
+      <a href="./chapters/08-client-credentials-feign.html">第 8 章：client_credentials + Feign</a>
+      <a href="./chapters/09-jpa-persistence.html">第 9 章：JPA 持久化</a>
+      <a href="./chapters/10-rbac-claims-gateway.html">第 10 章：RBAC、Claims、Gateway</a>
+      <a href="./chapters/11-production-checklist.html">第 11 章：生产加固清单</a>
+    </aside>
+
+    <article class="content">
+      <section class="card">
+        <h2>这本小书适合谁？</h2>
+        <p>
+          适合已经会 Spring Boot 3、Spring Security、微服务开发，但对 OAuth2 / OIDC 授权服务器还没有形成完整系统图的 Java 后端。
+        </p>
+        <p>
+          这里默认你不是为了写一个简单 login 接口，而是准备新增独立的
+          <code>conference-module-auth</code>，让它成为整个 conference 系统的 OAuth2 / OIDC 鉴权中心。
+        </p>
+      </section>
+
+      <section class="official-note">
+        <strong>官方依据：</strong>
+        本项目固定基于 Spring Authorization Server 1.5.8 Reference。
+        官方 Overview 说明 Spring Authorization Server 是构建在 Spring Security 之上的 OAuth2 / OpenID Connect 1.0 授权服务器框架。
+        本项目中的 conference 架构拆分、Gateway 边界、Feign 服务 Token 方案，属于项目落地解释，不是官方原文。
+      </section>
+
+      <section class="card">
+        <h2>conference 项目目标架构</h2>
+        <p>
+          你要做的不是“system 模块继续登录，然后顺手发个 JWT”。
+          更清晰的边界是：auth 专心发 Token，system 专心管用户和权限档案，Gateway 专心守入口，业务服务专心处理业务。
+        </p>
+
+        <figure class="diagram">
+          <svg viewBox="0 0 980 520" role="img" aria-label="conference OAuth2 总体架构图">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L9,3 z"></path>
+              </marker>
+            </defs>
+
+            <rect x="40" y="50" width="190" height="90" rx="16" class="svg-box client"/>
+            <text x="135" y="88" text-anchor="middle" class="svg-title">浏览器前端</text>
+            <text x="135" y="116" text-anchor="middle" class="svg-text">platform-admin</text>
+            <text x="135" y="136" text-anchor="middle" class="svg-text">conference-portal</text>
+
+            <rect x="390" y="40" width="220" height="110" rx="16" class="svg-box auth"/>
+            <text x="500" y="82" text-anchor="middle" class="svg-title">conference-module-auth</text>
+            <text x="500" y="112" text-anchor="middle" class="svg-text">Authorization Server</text>
+            <text x="500" y="134" text-anchor="middle" class="svg-text">签发 Token / OIDC</text>
+
+            <rect x="750" y="50" width="190" height="90" rx="16" class="svg-box system"/>
+            <text x="845" y="88" text-anchor="middle" class="svg-title">system</text>
+            <text x="845" y="116" text-anchor="middle" class="svg-text">用户 / 角色 / 菜单</text>
+            <text x="845" y="136" text-anchor="middle" class="svg-text">权限档案室</text>
+
+            <rect x="390" y="230" width="220" height="100" rx="16" class="svg-box gateway"/>
+            <text x="500" y="270" text-anchor="middle" class="svg-title">Gateway</text>
+            <text x="500" y="300" text-anchor="middle" class="svg-text">Resource Server</text>
+            <text x="500" y="322" text-anchor="middle" class="svg-text">验 JWT / 注入上下文</text>
+
+            <rect x="80" y="405" width="160" height="70" rx="14" class="svg-box service"/>
+            <text x="160" y="444" text-anchor="middle" class="svg-title">conference</text>
+
+            <rect x="310" y="405" width="160" height="70" rx="14" class="svg-box service"/>
+            <text x="390" y="444" text-anchor="middle" class="svg-title">pay</text>
+
+            <rect x="540" y="405" width="160" height="70" rx="14" class="svg-box service"/>
+            <text x="620" y="444" text-anchor="middle" class="svg-title">infra</text>
+
+            <rect x="770" y="405" width="160" height="70" rx="14" class="svg-box service"/>
+            <text x="850" y="444" text-anchor="middle" class="svg-title">其他服务</text>
+
+            <line x1="230" y1="95" x2="390" y2="95" class="svg-line" marker-end="url(#arrow)"/>
+            <text x="310" y="78" text-anchor="middle" class="svg-text">Authorization Code + PKCE</text>
+
+            <line x1="610" y1="95" x2="750" y2="95" class="svg-line dashed" marker-end="url(#arrow)"/>
+            <text x="680" y="78" text-anchor="middle" class="svg-text">查询用户权限</text>
+
+            <line x1="135" y1="140" x2="430" y2="230" class="svg-line" marker-end="url(#arrow)"/>
+            <text x="245" y="205" class="svg-text">Bearer access_token</text>
+
+            <line x1="500" y1="330" x2="160" y2="405" class="svg-line" marker-end="url(#arrow)"/>
+            <line x1="500" y1="330" x2="390" y2="405" class="svg-line" marker-end="url(#arrow)"/>
+            <line x1="500" y1="330" x2="620" y2="405" class="svg-line" marker-end="url(#arrow)"/>
+            <line x1="500" y1="330" x2="850" y2="405" class="svg-line" marker-end="url(#arrow)"/>
+          </svg>
+          <figcaption>项目落地建议：auth 负责签发，Gateway 负责验签，system 负责权限档案，业务服务只信任 Gateway 传下来的上下文。</figcaption>
+        </figure>
+      </section>
+
+      <section id="route" class="card">
+        <h2>推荐阅读路线</h2>
+        <ol class="reading-route">
+          <li><strong>第 0～2 章：</strong>先把脑图搭起来，不急着写配置。</li>
+          <li><strong>第 3～6 章：</strong>再看最小可运行配置、客户端注册、Token 与 JWK。</li>
+          <li><strong>第 7～8 章：</strong>把浏览器登录和服务间调用分别跑通。</li>
+          <li><strong>第 9～11 章：</strong>进入生产化：持久化、权限 Claims、Gateway、密钥、审计和安全清单。</li>
+        </ol>
+      </section>
+
+      <section class="remember-box">
+        <strong>先记住：</strong>
+        Spring Authorization Server 不是“加了 JWT 的登录接口”。
+        它是 OAuth2 / OIDC 授权服务器框架。你要先确定系统边界，再写配置。
+      </section>
+    </article>
+  </main>
+
+  <footer class="book-footer">
+    <div class="container">
+      <span>Spring Authorization Server 1.5.8 中文学习小书</span>
+      <a href="./chapters/00-before-you-start.html">进入第 0 章 →</a>
+    </div>
+  </footer>
+
+  <script src="./assets/js/main.js"></script>
+</body>
+</html>
