@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>第 0 章：开始之前：别急着写配置</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="chapter-header">
+    <div class="container">
+      <a class="back-link" href="../index.html">← 返回首页</a>
+      <p class="eyebrow">第 0 章</p>
+      <h1>开始之前：别急着写配置</h1>
+      <p class="lead">
+        你现在最容易犯的错误，不是少写一个 Bean，而是还没想清楚：
+        这个 auth 模块到底在系统里负责什么。
+      </p>
+    </div>
+  </header>
+
+  <main id="main" class="container book-layout">
+    <aside class="toc">
+      <strong>本章位置</strong>
+      <a href="./00-before-you-start.html">第 0 章：开始之前</a>
+      <a href="./01-big-picture.html">第 1 章：大图</a>
+      <a href="./02-oauth2-roles.html">第 2 章：OAuth2 角色</a>
+      <a href="./03-getting-started.html">第 3 章：Getting Started</a>
+    </aside>
+
+    <article class="content">
+      <nav class="chapter-nav top">
+        <a href="../index.html">← 首页</a>
+        <a href="./01-big-picture.html">下一章：大图 →</a>
+      </nav>
+
+      <section class="problem-box">
+        <h2>本章解决什么问题？</h2>
+        <p>
+          很多后端同学一看到 Spring Authorization Server，就马上去搜：
+          “最小配置怎么写？”、“JWKSource 怎么配？”、“怎么发 JWT？”
+        </p>
+        <p>
+          但如果你先写代码，后想边界，后面大概率会出现这种局面：
+          system 也能登录，auth 也能发 Token，Gateway 也在查权限，业务服务也在解析用户。
+          最后谁都能管一点，谁都说不清责任。
+        </p>
+      </section>
+
+      <section class="official-note">
+        <strong>官方依据：</strong>
+        本章基于 Spring Authorization Server 1.5.8 Reference 的 Overview 与 Getting Help 页面。
+        Overview 说明 Spring Authorization Server 是基于 Spring Security 构建的 OAuth2 / OpenID Connect 授权服务器框架；
+        Getting Help 页面建议阅读官方文档、How-to Guides、Samples，并通过 Stack Overflow 与 GitHub 获取帮助。
+        本章关于 conference 项目模块拆分的内容，是项目落地建议，不是官方原文。
+      </section>
+
+      <section class="card">
+        <h2>先讲人话：它不是普通 login-service</h2>
+        <p>
+          普通 login-service 的思路通常是：
+          用户名密码进来，查用户表，生成一个 token，塞 Redis 或签 JWT，然后返回。
+        </p>
+        <p>
+          Spring Authorization Server 的思路不是这样。
+          它站在 OAuth2 / OIDC 协议视角看问题：
+          谁是客户端？谁是用户？谁能申请什么 scope？用什么授权方式？
+          token 发给谁？资源服务器怎么相信这个 token？
+        </p>
+
+        <div class="remember-box">
+          <strong>先记住：</strong>
+          登录只是授权服务器的一部分。
+          Authorization Server 更大的职责是：按协议校验 client、校验授权请求、签发 token、暴露协议端点。
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>学习地图：先大图，再配置</h2>
+        <figure class="diagram">
+          <svg viewBox="0 0 960 360" role="img" aria-label="学习路线图">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L9,3 z"></path>
+              </marker>
+            </defs>
+
+            <rect x="40" y="90" width="150" height="90" rx="16" class="svg-box"/>
+            <text x="115" y="125" text-anchor="middle" class="svg-title">先看边界</text>
+            <text x="115" y="154" text-anchor="middle" class="svg-text">auth / gateway</text>
+            <text x="115" y="176" text-anchor="middle" class="svg-text">system / service</text>
+
+            <rect x="250" y="90" width="150" height="90" rx="16" class="svg-box"/>
+            <text x="325" y="125" text-anchor="middle" class="svg-title">再看角色</text>
+            <text x="325" y="154" text-anchor="middle" class="svg-text">user ≠ client</text>
+            <text x="325" y="176" text-anchor="middle" class="svg-text">public / confidential</text>
+
+            <rect x="460" y="90" width="150" height="90" rx="16" class="svg-box"/>
+            <text x="535" y="125" text-anchor="middle" class="svg-title">再跑 Demo</text>
+            <text x="535" y="154" text-anchor="middle" class="svg-text">最小 Bean</text>
+            <text x="535" y="176" text-anchor="middle" class="svg-text">端点能跑通</text>
+
+            <rect x="670" y="90" width="150" height="90" rx="16" class="svg-box"/>
+            <text x="745" y="125" text-anchor="middle" class="svg-title">最后生产化</text>
+            <text x="745" y="154" text-anchor="middle" class="svg-text">JPA / JWK</text>
+            <text x="745" y="176" text-anchor="middle" class="svg-text">Gateway / Feign</text>
+
+            <line x1="190" y1="135" x2="250" y2="135" class="svg-line" marker-end="url(#arrow)"/>
+            <line x1="400" y1="135" x2="460" y2="135" class="svg-line" marker-end="url(#arrow)"/>
+            <line x1="610" y1="135" x2="670" y2="135" class="svg-line" marker-end="url(#arrow)"/>
+
+            <text x="480" y="260" text-anchor="middle" class="svg-caption">
+              不要一上来就抄配置。先确定谁发 Token、谁验 Token、谁管权限。
+            </text>
+          </svg>
+        </figure>
+      </section>
+
+      <section class="card">
+        <h2>哪些官方页面必须认真读？</h2>
+        <p>
+          1.5.8 Reference 首页把文档分成几块：Overview、Getting Help、Getting Started、
+          Configuration Model、Core Model / Components、Protocol Endpoints、How-to Guides。
+          对你这个项目来说，阅读优先级可以这样排：
+        </p>
+
+        <div class="priority-list">
+          <div class="priority-item">
+            <strong>第一优先级</strong>
+            <p>Overview、Getting Started、Configuration Model、Core Model / Components。</p>
+          </div>
+          <div class="priority-item">
+            <strong>第二优先级</strong>
+            <p>Protocol Endpoints、SPA + PKCE、JPA core services、Add authorities as custom claims。</p>
+          </div>
+          <div class="priority-item">
+            <strong>后置阅读</strong>
+            <p>Social Login、Extension Grant、Dynamic Client Registration、多租户等，等主链路跑通再看。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="project-note">
+        <h2>项目落地：为什么需要独立 conference-module-auth？</h2>
+        <p>这是项目落地建议，不是官方原文。</p>
+        <p>
+          你的 system 模块已经有用户、角色、菜单、按钮权限。它更像“权限档案室”：
+          保存谁是谁、有什么角色、能看到哪些菜单、能点哪些按钮。
+        </p>
+        <p>
+          但 OAuth2 / OIDC 授权服务器要处理的是另一类问题：
+          client 注册、授权请求、授权码、Token 签发、JWK、OIDC 元数据、Token 生命周期。
+          这些职责如果继续塞进 system，后面会很难维护。
+        </p>
+        <p>
+          所以更清晰的拆法是：
+          <code>conference-module-auth</code> 负责协议和 Token，
+          <code>conference-module-system</code> 负责用户和权限数据。
+        </p>
+      </section>
+
+      <section class="pitfall-box">
+        <h2>别在这里翻车</h2>
+        <ul>
+          <li>不要把 Spring Authorization Server 当成“JWT 工具类”。</li>
+          <li>不要让 system、auth、gateway 都各自查一遍权限。</li>
+          <li>不要把 demo 里的内存 client、随机密钥直接带到生产。</li>
+          <li>不要把“用户登录成功”误认为“OAuth2 授权流程设计完成”。</li>
+        </ul>
+      </section>
+
+      <section class="summary-box">
+        <h2>这一章记住这几句话</h2>
+        <p>
+          Spring Authorization Server 是授权服务器框架，不是普通登录接口。
+          先定边界，再写配置。
+          在 conference 项目里，auth 发 Token，system 管权限档案，Gateway 守入口，业务服务信任经过 Gateway 处理后的上下文。
+        </p>
+      </section>
+
+      <nav class="chapter-nav bottom">
+        <a href="../index.html">← 首页</a>
+        <a href="./01-big-picture.html">下一章：大图 →</a>
+      </nav>
+    </article>
+  </main>
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>
